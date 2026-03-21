@@ -526,65 +526,125 @@
 </div>
 
 <script>
-// ─── DATOS DE JUGADORES ──────────────────────────────────────────────────────
+// ─── DATOS ───────────────────────────────────────────────────────────────────
 // Resultados: 'W' = ganó, 'D' = empató, 'L' = perdió, 'X' = no jugó
 const PLAYERS_DATA = [
-  { name: "Manuel Diaz",               results: ["L","W","L"] },
-  { name: "Facundo Morazzani",         results: ["L","L","W"] },
-  { name: "Lautaro Pastorino",         results: ["X","X","W"] },
-  { name: "Santiago Seroni",           results: ["L","L","L"] },
-  { name: "Juan Manuel Garcia",        results: ["X","W","X"] },
-  { name: "Franco Boi",                results: ["W","L","W"] },
-  { name: "Marco Braca",               results: ["L","W","W"] },
-  { name: "Matias Nasif",              results: ["X","W","L"] },
-  { name: "Lautaro Barrionuevo",       results: ["W","L","W"] },
-  { name: "Estanislao Chiocconi",      results: ["X","W","L"] },
-  { name: "Mauricio Bergallo",         results: ["W","W","X"] },
-  { name: "Pedro Molina",              results: ["X","X","W"] },
-  { name: "Matías Teitelbaum",         results: ["W","X","X"] },
-  { name: "Juan Ignacio Richiello",    results: ["L","X","X"] },
+  { id:  1, name: "Manuel Diaz",               results: ["L","W","L"] },
+  { id:  2, name: "Facundo Morazzani",         results: ["L","L","W"] },
+  { id:  3, name: "Lautaro Pastorino",         results: ["X","X","W"] },
+  { id:  4, name: "Santiago Seroni",           results: ["L","L","L"] },
+  { id:  5, name: "Juan Manuel Garcia",        results: ["X","W","X"] },
+  { id:  6, name: "Franco Boi",                results: ["W","L","W"] },
+  { id:  7, name: "Marco Braca",               results: ["L","W","W"] },
+  { id:  8, name: "Matias Nasif",              results: ["X","W","L"] },
+  { id:  9, name: "Lautaro Barrionuevo",       results: ["W","L","W"] },
+  { id: 10, name: "Estanislao Chiocconi",      results: ["X","X","L"] },
+  { id: 11, name: "Mauricio Bergallo",         results: ["W","W","X"] },
+  { id: 12, name: "Pedro Molina",              results: ["X","X","W"] },
+  { id: 13, name: "Matías Teitelbaum",         results: ["W","X","X"] },
+  { id: 14, name: "Juan Ignacio Richiello",    results: ["L","X","X"] },
+  { id: 15, name: "Manuel Gonzalez Virgili",   results: ["W","L","X"] },
+];
+
+const MATCHES = [
+  { id: 1, team_1: [2,4,14,7,1],   team_2: [15,13,6,9,11] },
+  { id: 2, team_1: [1,7,5,8,11],   team_2: [15,2,6,9,4]   },
+  { id: 3, team_1: [1,8,10,12,4],  team_2: [3,6,7,9,2]    },
 ];
 
 // ─── ELO ENGINE ──────────────────────────────────────────────────────────────
-// K variable: primeros 5 partidos jugados → K=100, partidos 6-10 → K=70, 11+ → K=50
+// K variable por partidos jugados por el jugador: 1-5 → 100, 6-10 → 70, 11+ → 50
 const ELO_START = 1200;
-const EXPECTED_WIN  = 0.65;
-const EXPECTED_DRAW = 0.50;
-const EXPECTED_LOSS = 0.35;
 
-function getK(gameNumber) {
-  // gameNumber es el índice del partido jugado (1-based)
-  if (gameNumber <= 5)  return 100;
-  if (gameNumber <= 10) return 70;
+function getK(playedCount) {
+  if (playedCount <= 5)  return 100;
+  if (playedCount <= 10) return 70;
   return 50;
 }
 
-function calcElo(results) {
-  let elo = ELO_START;
-  let playedCount = 0; // contador solo de partidos realmente jugados
-  for (const r of results) {
-    if (r === 'X') continue; // no jugó, no afecta el ELO
-    playedCount++;
-    const k = getK(playedCount);
-    let score, expected;
-    if (r === 'W')      { score = 1;   expected = EXPECTED_WIN;  }
-    else if (r === 'D') { score = 0.5; expected = EXPECTED_DRAW; }
-    else                { score = 0;   expected = EXPECTED_LOSS; }
-    elo = Math.round(elo + k * (score - expected));
-  }
-  return elo;
+// Probabilidad esperada de ganar dado el promedio ELO de cada equipo
+// Fórmula ELO clásica: E = 1 / (1 + 10^((eloRival - eloPropio) / 400))
+function expectedScore(myTeamAvg, rivalTeamAvg) {
+  return 1 / (1 + Math.pow(10, (rivalTeamAvg - myTeamAvg) / 400));
+}
+
+function teamAvgElo(ids, eloMap) {
+  const total = ids.reduce((s, id) => s + (eloMap[id] ?? ELO_START), 0);
+  return total / ids.length;
+}
+
+// Calcula el ELO final de todos los jugadores procesando los partidos en orden.
+// En cada partido, el ELO de cada equipo se toma ANTES de aplicar los cambios
+// del partido (snapshot), luego se actualizan todos juntos.
+function buildPlayers() {
+  // Mapa id → ELO actual (mutable durante el cálculo)
+  const eloMap = {};
+  // Mapa id → cantidad de partidos jugados (para determinar K)
+  const playedMap = {};
+
+  PLAYERS_DATA.forEach(p => {
+    eloMap[p.id]   = ELO_START;
+    playedMap[p.id] = 0;
+  });
+
+  // Procesar cada partido en orden cronológico
+  MATCHES.forEach((match, mIdx) => {
+    const t1 = match.team_1;
+    const t2 = match.team_2;
+
+    // Snapshot de ELO ANTES del partido (para calcular expectativa justa)
+    const avgT1 = teamAvgElo(t1, eloMap);
+    const avgT2 = teamAvgElo(t2, eloMap);
+
+    // Resultados del partido para cada equipo según PLAYERS_DATA
+    // El resultado en results[mIdx] de cada jugador dice W/L/D/X
+    const deltas = {}; // id → delta ELO a aplicar
+
+    [...t1, ...t2].forEach(id => {
+      const player = PLAYERS_DATA.find(p => p.id === id);
+      const result = player.results[mIdx]; // resultado de este partido
+
+      if (result === 'X') return; // no jugó, sin cambio
+
+      const isTeam1 = t1.includes(id);
+      const myAvg     = isTeam1 ? avgT1 : avgT2;
+      const rivalAvg  = isTeam1 ? avgT2 : avgT1;
+
+      const E = expectedScore(myAvg, rivalAvg);
+      let S;
+      if (result === 'W')      S = 1;
+      else if (result === 'D') S = 0.5;
+      else                     S = 0;
+
+      playedMap[id]++;
+      const K = getK(playedMap[id]);
+      deltas[id] = Math.round(K * (S - E));
+    });
+
+    // Aplicar todos los deltas juntos (snapshot approach)
+    Object.entries(deltas).forEach(([id, delta]) => {
+      eloMap[id] += delta;
+    });
+  });
+
+  // Construir objetos finales de jugadores
+  return PLAYERS_DATA.map(p => {
+    const played = p.results.filter(r => r !== 'X');
+    return {
+      id:     p.id,
+      name:   p.name,
+      results: p.results,
+      elo:    eloMap[p.id],
+      pj:     played.length,
+      wins:   played.filter(r => r === 'W').length,
+      draws:  played.filter(r => r === 'D').length,
+      losses: played.filter(r => r === 'L').length,
+    };
+  });
 }
 
 // ─── BUILD PLAYER OBJECTS ────────────────────────────────────────────────────
-const players = PLAYERS_DATA.map(p => {
-  const elo    = calcElo(p.results);
-  const played = p.results.filter(r => r !== 'X');
-  const wins   = played.filter(r => r === 'W').length;
-  const draws  = played.filter(r => r === 'D').length;
-  const losses = played.filter(r => r === 'L').length;
-  const pj     = played.length;
-  return { name: p.name, results: p.results, elo, wins, draws, losses, pj };
-});
+const players = buildPlayers();
 
 // Sort by ELO desc
 players.sort((a, b) => b.elo - a.elo);
