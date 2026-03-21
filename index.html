@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ELO Fútbol 5</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -20,6 +21,8 @@
     --text-dim: #7faa8e;
     --red: #e05555;
     --blue: #4a9edd;
+    --team-light: #e8d97a;
+    --team-dark: #3a3a3a;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -322,8 +325,8 @@
     justify-content: space-between;
   }
 
-  .team-a .team-header { background: rgba(74,158,221,0.15); border-bottom: 1px solid rgba(74,158,221,0.25); }
-  .team-b .team-header { background: rgba(224,85,85,0.15); border-bottom: 1px solid rgba(224,85,85,0.25); }
+  .team-a .team-header { background: rgba(232,217,122,0.12); border-bottom: 1px solid rgba(232,217,122,0.25); }
+  .team-b .team-header { background: rgba(58,58,58,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); }
 
   .team-label {
     font-family: 'Bebas Neue', sans-serif;
@@ -331,8 +334,8 @@
     letter-spacing: 2px;
   }
 
-  .team-a .team-label { color: var(--blue); }
-  .team-b .team-label { color: var(--red); }
+  .team-a .team-label { color: var(--team-light); }
+  .team-b .team-label { color: #aaaaaa; }
 
   .team-elo-total {
     font-family: 'Bebas Neue', sans-serif;
@@ -422,12 +425,12 @@
   }
 
   .bar-a {
-    background: var(--blue);
+    background: var(--team-light);
     transition: width 0.6s cubic-bezier(.4,0,.2,1);
   }
 
   .bar-b {
-    background: var(--red);
+    background: #6a6a6a;
     transition: width 0.6s cubic-bezier(.4,0,.2,1);
   }
 
@@ -800,7 +803,7 @@ function renderTeams(teamA, teamB) {
     <div class="teams-grid">
       <div class="team-card team-a">
         <div class="team-header">
-          <span class="team-label">⬢ Equipo Azul</span>
+          <span class="team-label">☀ Equipo Claro</span>
           <span class="team-elo-total">${totalA} pts</span>
         </div>
         <ul class="team-players">${listA}</ul>
@@ -815,7 +818,7 @@ function renderTeams(teamA, teamB) {
 
       <div class="team-card team-b">
         <div class="team-header">
-          <span class="team-label">⬢ Equipo Rojo</span>
+          <span class="team-label">🌑 Equipo Oscuro</span>
           <span class="team-elo-total">${totalB} pts</span>
         </div>
         <ul class="team-players">${listB}</ul>
@@ -829,8 +832,8 @@ function renderTeams(teamA, teamB) {
         <div class="bar-b" style="width:${pctB}%"></div>
       </div>
       <div class="bar-labels">
-        <span style="color:var(--blue)">Azul ${pctA}%</span>
-        <span style="color:var(--red)">Rojo ${pctB}%</span>
+        <span style="color:var(--team-light)">Claro ${pctA}%</span>
+        <span style="color:#aaaaaa">Oscuro ${pctB}%</span>
       </div>
     </div>
 
