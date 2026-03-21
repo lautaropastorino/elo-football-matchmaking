@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELO Fútbol 5</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1a6b3a;
+    --green-light: #2d9e57;
+    --green-dark: #0e3d21;
+    --gold: #f0c040;
+    --gold-dim: #c9a030;
+    --bg: #0d1f14;
+    --surface: #142a1c;
+    --surface2: #1c3828;
+    --border: #2a4e35;
+    --text: #e8f0eb;
+    --text-dim: #7faa8e;
+    --red: #e05555;
+    --blue: #4a9edd;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(26,107,58,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,107,58,0.07) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header {
+    padding: 40px 0 30px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 18px 6px 10px;
+    margin-bottom: 16px;
+  }
+
+  .logo-ball {
+    font-size: 20px;
+  }
+
+  .logo-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--green-light);
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 8vw, 72px);
+    letter-spacing: 4px;
+    line-height: 1;
+    color: var(--text);
+    text-shadow: 0 0 40px rgba(45,158,87,0.3);
+  }
+
+  h1 span {
+    color: var(--gold);
+  }
+
+  .subtitle {
+    margin-top: 8px;
+    color: var(--text-dim);
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  /* SECTION TITLES */
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* RANKING TABLE */
+  .ranking-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+    margin-bottom: 48px;
+  }
+
+  .ranking-table thead th {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    padding: 6px 14px;
+    text-align: left;
+    font-weight: 400;
+  }
+
+  .ranking-table thead th:last-child,
+  .ranking-table thead th:nth-child(3),
+  .ranking-table thead th:nth-child(4),
+  .ranking-table thead th:nth-child(5) {
+    text-align: center;
+  }
+
+  .ranking-table tbody tr {
+    background: var(--surface);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+
+  .ranking-table tbody tr:hover {
+    background: var(--surface2);
+  }
+
+  .ranking-table tbody tr.selected {
+    background: rgba(45,158,87,0.18);
+    outline: 1.5px solid var(--green-light);
+    outline-offset: -1.5px;
+  }
+
+  .ranking-table tbody tr.selected td:first-child {
+    border-left: 3px solid var(--green-light);
+  }
+
+  .ranking-table tbody td {
+    padding: 12px 14px;
+    font-size: 14px;
+    border-left: 3px solid transparent;
+  }
+
+  .rank-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--text-dim);
+    width: 40px;
+    text-align: center;
+  }
+
+  .rank-1 .rank-num { color: var(--gold); }
+  .rank-2 .rank-num { color: #b0c8d0; }
+  .rank-3 .rank-num { color: #c08050; }
+
+  .player-name {
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .elo-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--gold);
+  }
+
+  .elo-cell {
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .stat-cell {
+    text-align: center;
+    font-size: 13px;
+  }
+
+  .stat-w { color: var(--green-light); font-weight: 600; }
+  .stat-d { color: var(--text-dim); }
+  .stat-l { color: var(--red); font-weight: 600; }
+
+  .form-badges {
+    display: flex;
+    gap: 3px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .form-badge {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+
+  .form-badge.W { background: var(--green-light); }
+  .form-badge.D { background: #5a7a65; }
+  .form-badge.L { background: var(--red); }
+  .form-badge.X { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+
+  .select-hint {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .counter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 8px 20px;
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+
+  .counter-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .counter-num.ready {
+    color: var(--green-light);
+  }
+
+  /* BUTTON */
+  .btn-create {
+    display: block;
+    margin: 20px auto 0;
+    background: var(--green-light);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 16px 40px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 4px 20px rgba(45,158,87,0.3);
+  }
+
+  .btn-create:hover:not(:disabled) {
+    background: #38c068;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(45,158,87,0.5);
+  }
+
+  .btn-create:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-create:disabled {
+    background: var(--surface2);
+    color: var(--text-dim);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  /* TEAMS RESULT */
+  #teams-result {
+    margin-top: 40px;
+  }
+
+  .teams-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    align-items: start;
+  }
+
+  .team-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .team-header {
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .team-a .team-header { background: rgba(74,158,221,0.15); border-bottom: 1px solid rgba(74,158,221,0.25); }
+  .team-b .team-header { background: rgba(224,85,85,0.15); border-bottom: 1px solid rgba(224,85,85,0.25); }
+
+  .team-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+  }
+
+  .team-a .team-label { color: var(--blue); }
+  .team-b .team-label { color: var(--red); }
+
+  .team-elo-total {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--text-dim);
+  }
+
+  .team-players {
+    list-style: none;
+    padding: 12px 0;
+  }
+
+  .team-players li {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .team-players li:last-child { border-bottom: none; }
+
+  .tp-name { font-weight: 500; }
+
+  .tp-elo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    color: var(--gold);
+  }
+
+  .vs-divider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    gap: 6px;
+  }
+
+  .vs-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .diff-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .diff-badge strong {
+    color: var(--gold);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 15px;
+  }
+
+  .balance-bar {
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
+
+  .balance-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .bar-container {
+    height: 10px;
+    background: var(--surface2);
+    border-radius: 100px;
+    overflow: hidden;
+    display: flex;
+  }
+
+  .bar-a {
+    background: var(--blue);
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+
+  .bar-b {
+    background: var(--red);
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+
+  .bar-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .btn-reshuffle {
+    display: block;
+    margin: 20px auto 0;
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .btn-reshuffle:hover {
+    border-color: var(--text-dim);
+    color: var(--text);
+  }
+
+  /* ELO bar in table */
+  .elo-mini-bar-wrap {
+    width: 70px;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 100px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+  .elo-mini-bar {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 100px;
+  }
+
+  @media (max-width: 640px) {
+    .teams-grid { grid-template-columns: 1fr; }
+    .vs-divider { padding: 10px 0; flex-direction: row; justify-content: center; }
+    .form-badges { display: none; }
+    .ranking-table thead th:nth-child(5) { display: none; }
+    .ranking-table tbody td:nth-child(5) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-badge">
+      <span class="logo-ball">⚽</span>
+      <span class="logo-label">Sistema de Ranking</span>
+    </div>
+    <h1>FÚTBOL <span>5</span></h1>
+    <p class="subtitle">Sistema de clasificación ELO · Temporada 2025</p>
+  </header>
+
+  <div class="section-title">Ranking ELO</div>
+  <table class="ranking-table" id="ranking-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Jugador</th>
+        <th>ELO</th>
+        <th>PJ / G / E / P</th>
+        <th>Forma</th>
+      </tr>
+    </thead>
+    <tbody id="ranking-body"></tbody>
+  </table>
+
+  <div class="section-title">Armar Equipos</div>
+  <div class="select-hint">
+    <div class="counter-badge">
+      Seleccionados: <span class="counter-num" id="selected-count">0</span> / 10
+    </div>
+  </div>
+
+  <button class="btn-create" id="btn-create" disabled onclick="createTeams()">
+    ⚡ CREAR EQUIPOS
+  </button>
+
+  <div id="teams-result"></div>
+
+</div>
+
+<script>
+// ─── DATOS DE JUGADORES ──────────────────────────────────────────────────────
+// Resultados: 'W' = ganó, 'D' = empató, 'L' = perdió, 'X' = no jugó
+const PLAYERS_DATA = [
+  { name: "Manuel Diaz",               results: ["L","W","L"] },
+  { name: "Facundo Morazzani",         results: ["L","L","W"] },
+  { name: "Lautaro Pastorino",         results: ["X","X","W"] },
+  { name: "Santiago Seroni",           results: ["L","L","L"] },
+  { name: "Juan Manuel Garcia",        results: ["X","W","X"] },
+  { name: "Franco Boi",                results: ["W","L","W"] },
+  { name: "Marco Braca",               results: ["L","W","W"] },
+  { name: "Matias Nasif",              results: ["X","W","L"] },
+  { name: "Lautaro Barrionuevo",       results: ["W","L","W"] },
+  { name: "Estanislao Chiocconi",      results: ["X","W","L"] },
+  { name: "Mauricio Bergallo",         results: ["W","W","X"] },
+  { name: "Pedro Molina",              results: ["X","X","W"] },
+  { name: "Matías Teitelbaum",         results: ["W","X","X"] },
+  { name: "Juan Ignacio Richiello",    results: ["L","X","X"] },
+];
+
+// ─── ELO ENGINE ──────────────────────────────────────────────────────────────
+// K variable: primeros 5 partidos jugados → K=100, partidos 6-10 → K=70, 11+ → K=50
+const ELO_START = 1200;
+const EXPECTED_WIN  = 0.65;
+const EXPECTED_DRAW = 0.50;
+const EXPECTED_LOSS = 0.35;
+
+function getK(gameNumber) {
+  // gameNumber es el índice del partido jugado (1-based)
+  if (gameNumber <= 5)  return 100;
+  if (gameNumber <= 10) return 70;
+  return 50;
+}
+
+function calcElo(results) {
+  let elo = ELO_START;
+  let playedCount = 0; // contador solo de partidos realmente jugados
+  for (const r of results) {
+    if (r === 'X') continue; // no jugó, no afecta el ELO
+    playedCount++;
+    const k = getK(playedCount);
+    let score, expected;
+    if (r === 'W')      { score = 1;   expected = EXPECTED_WIN;  }
+    else if (r === 'D') { score = 0.5; expected = EXPECTED_DRAW; }
+    else                { score = 0;   expected = EXPECTED_LOSS; }
+    elo = Math.round(elo + k * (score - expected));
+  }
+  return elo;
+}
+
+// ─── BUILD PLAYER OBJECTS ────────────────────────────────────────────────────
+const players = PLAYERS_DATA.map(p => {
+  const elo    = calcElo(p.results);
+  const played = p.results.filter(r => r !== 'X');
+  const wins   = played.filter(r => r === 'W').length;
+  const draws  = played.filter(r => r === 'D').length;
+  const losses = played.filter(r => r === 'L').length;
+  const pj     = played.length;
+  return { name: p.name, results: p.results, elo, wins, draws, losses, pj };
+});
+
+// Sort by ELO desc
+players.sort((a, b) => b.elo - a.elo);
+
+const maxElo = Math.max(...players.map(p => p.elo));
+const minElo = Math.min(...players.map(p => p.elo));
+
+// ─── RENDER RANKING ──────────────────────────────────────────────────────────
+const tbody = document.getElementById('ranking-body');
+const selectedIds = new Set();
+
+players.forEach((p, i) => {
+  const row = document.createElement('tr');
+  row.dataset.idx = i;
+  if (i < 3) row.classList.add(`rank-${i+1}`);
+
+  const pj = p.pj;
+  const formLast5 = p.results.slice(-5);
+  const formBadges = formLast5.map(r =>
+    `<span class="form-badge ${r}">${r === 'X' ? '–' : r}</span>`
+  ).join('');
+
+  const barWidth = maxElo === minElo ? 100 :
+    Math.round(((p.elo - minElo) / (maxElo - minElo)) * 100);
+
+  row.innerHTML = `
+    <td class="rank-num">${i + 1}</td>
+    <td class="player-name">${p.name}</td>
+    <td class="elo-cell">
+      <span class="elo-score">${p.elo}</span>
+      <span class="elo-mini-bar-wrap"><span class="elo-mini-bar" style="width:${barWidth}%"></span></span>
+    </td>
+    <td class="stat-cell">
+      ${pj} /
+      <span class="stat-w">${p.wins}G</span>
+      <span class="stat-d">${p.draws}E</span>
+      <span class="stat-l">${p.losses}P</span>
+    </td>
+    <td><div class="form-badges">${formBadges}</div></td>
+  `;
+
+  row.addEventListener('click', () => toggleSelect(i, row));
+  tbody.appendChild(row);
+});
+
+function toggleSelect(idx, row) {
+  if (selectedIds.has(idx)) {
+    selectedIds.delete(idx);
+    row.classList.remove('selected');
+  } else {
+    if (selectedIds.size >= 10) return;
+    selectedIds.add(idx);
+    row.classList.add('selected');
+  }
+  updateCounter();
+}
+
+function updateCounter() {
+  const cnt = selectedIds.size;
+  const el = document.getElementById('selected-count');
+  el.textContent = cnt;
+  el.classList.toggle('ready', cnt === 10);
+  document.getElementById('btn-create').disabled = cnt !== 10;
+}
+
+// ─── TEAM BALANCING ALGORITHM ─────────────────────────────────────────────
+// Objective: minimize both the ELO total difference AND the internal variance
+// difference between teams. Uses exhaustive search over C(10,5) = 252 combos.
+
+function variance(arr) {
+  const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+  return arr.reduce((s, x) => s + (x - mean) ** 2, 0) / arr.length;
+}
+
+function balanceScore(teamA, teamB) {
+  const totalA = teamA.reduce((s, p) => s + p.elo, 0);
+  const totalB = teamB.reduce((s, p) => s + p.elo, 0);
+  const totalDiff = Math.abs(totalA - totalB);
+
+  // Variance "fairness": penalize teams where one star dominates
+  const varA = variance(teamA.map(p => p.elo));
+  const varB = variance(teamB.map(p => p.elo));
+  const varDiff = Math.abs(varA - varB);
+
+  // Weighted score: total diff matters more, but variance diff adds penalty
+  return totalDiff + varDiff * 0.5;
+}
+
+function getCombinations(arr, k) {
+  const result = [];
+  function bt(start, combo) {
+    if (combo.length === k) { result.push([...combo]); return; }
+    for (let i = start; i < arr.length; i++) {
+      combo.push(arr[i]);
+      bt(i + 1, combo);
+      combo.pop();
+    }
+  }
+  bt(0, []);
+  return result;
+}
+
+let lastTeamA = [], lastTeamB = [];
+
+function createTeams() {
+  const selected = [...selectedIds].map(i => players[i]);
+
+  const combos = getCombinations(selected, 5);
+  let best = null, bestScore = Infinity;
+
+  for (const teamA of combos) {
+    const teamASet = new Set(teamA.map(p => p.name));
+    const teamB = selected.filter(p => !teamASet.has(p.name));
+    const score = balanceScore(teamA, teamB);
+    if (score < bestScore) {
+      bestScore = score;
+      best = { teamA, teamB };
+    }
+  }
+
+  // Sort each team by ELO desc
+  best.teamA.sort((a, b) => b.elo - a.elo);
+  best.teamB.sort((a, b) => b.elo - a.elo);
+
+  lastTeamA = best.teamA;
+  lastTeamB = best.teamB;
+
+  renderTeams(best.teamA, best.teamB);
+}
+
+function renderTeams(teamA, teamB) {
+  const totalA = teamA.reduce((s, p) => s + p.elo, 0);
+  const totalB = teamB.reduce((s, p) => s + p.elo, 0);
+  const diff = Math.abs(totalA - totalB);
+  const total = totalA + totalB;
+  const pctA = Math.round((totalA / total) * 100);
+  const pctB = 100 - pctA;
+
+  const listA = teamA.map(p => `
+    <li>
+      <span class="tp-name">${p.name}</span>
+      <span class="tp-elo">${p.elo}</span>
+    </li>`).join('');
+
+  const listB = teamB.map(p => `
+    <li>
+      <span class="tp-name">${p.name}</span>
+      <span class="tp-elo">${p.elo}</span>
+    </li>`).join('');
+
+  document.getElementById('teams-result').innerHTML = `
+    <div class="section-title">Equipos</div>
+    <div class="teams-grid">
+      <div class="team-card team-a">
+        <div class="team-header">
+          <span class="team-label">⬢ Equipo Azul</span>
+          <span class="team-elo-total">${totalA} pts</span>
+        </div>
+        <ul class="team-players">${listA}</ul>
+      </div>
+
+      <div class="vs-divider">
+        <span class="vs-text">VS</span>
+        <div class="diff-badge">
+          Diferencia<br><strong>${diff}</strong> pts
+        </div>
+      </div>
+
+      <div class="team-card team-b">
+        <div class="team-header">
+          <span class="team-label">⬢ Equipo Rojo</span>
+          <span class="team-elo-total">${totalB} pts</span>
+        </div>
+        <ul class="team-players">${listB}</ul>
+      </div>
+    </div>
+
+    <div class="balance-bar">
+      <div class="balance-label">Balance ELO</div>
+      <div class="bar-container">
+        <div class="bar-a" style="width:${pctA}%"></div>
+        <div class="bar-b" style="width:${pctB}%"></div>
+      </div>
+      <div class="bar-labels">
+        <span style="color:var(--blue)">Azul ${pctA}%</span>
+        <span style="color:var(--red)">Rojo ${pctB}%</span>
+      </div>
+    </div>
+
+    <button class="btn-reshuffle" onclick="createTeams()">
+      🔀 Recalcular equipos
+    </button>
+  `;
+
+  document.getElementById('teams-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
